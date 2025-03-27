@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <div id="harvest-report" v-cloak>
+    <h1>{{ reportTitle ? reportTitle : 'Mock Harvest Report' }}</h1>
+
+    <label for="report-title">Report Title: </label>
+    <input v-model="reportTitle" placeholder="Enter report title here" />
+    <br /><br />
+
+    <label for="start-date">Start: </label>
+    <input type="date" v-model="reportStartDate" :max="reportEndDate" />
+
+    <label for="end-date">End: </label>
+    <input type="date" v-model="reportEndDate" :min="reportStartDate" />
+    <br /><br />
+
+    <label for="crop">Crop: </label>
+    <select v-model="reportCrop">
+      <option value="">Select a crop</option>
+      <option v-for="crop in cropNames" :key="crop" :value="crop">{{ crop }}</option>
+    </select>
+
+    <label for="area">Area: </label>
+    <select v-model="reportArea">
+      <option value="">Select an area</option>
+      <option v-for="area in areaNames" :key="area" :value="area">{{ area }}</option>
+    </select>
+    <br /><br />
+
+    <button @click="generateReport">Generate Report</button>
+    <br /><br />
+
+    <div v-if="reportFarm && reportUser && reportLanguage">
+      <p><strong>Farm:</strong> {{ reportFarm }}</p>
+      <p><strong>User:</strong> {{ reportUser }}</p>
+      <p><strong>Language:</strong> {{ reportLanguage }}</p>
+    </div>
+
+    <h2>Harvest Report Table:</h2>
+
+    <p v-if="harvestReportRows.length === 0">No matching records.</p>
+
+    <table v-if="harvestReportRows.length > 0" border="1">
+      <thead>
+        <tr>
+          <th>Row</th>
+          <th>Date</th>
+          <th>Area</th>
+          <th>Crop</th>
+          <th>Yield</th>
+          <th>Units</th>
+          <th>Delete</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(log, index) in harvestReportRows" :key="index">
+          <td>{{ index + 1 }}</td>
+          <td>{{ log.date }}</td>
+          <td>{{ log.area }}</td>
+          <td>{{ log.crop }}</td>
+          <td>{{ log.yield }}</td>
+          <td>{{ log.units }}</td>
+          <td><button @click="deleteRow(index)">Delete</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3"></script>
+  <!-- Axios -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <!-- dayjs -->
+  <script src="https://unpkg.com/dayjs"></script>
+
+  <script>
+    const HarvestReport = Vue.createApp({
+      created() {
+        getIDToCropMap()
+          .then((Map) => {
+            this.idToCropMap = Map;
+          })
+          .catch((err) => console.error("Crop map error:", err));
+
+        getIDToAreaMap()
+          .then((Map) => {
+            this.idToAreaMap = Map;
+          })
+          .catch((err) => console.error("Area map error:", err));
+      },
+
+      data() {
+        return {
+          reportTitle: "",
+          reportStartDate: "",
+          reportEndDate: "",
+          reportCrop: "",
+          reportArea: "",
+          reportFarm: "",
+          reportUser: "",
+          reportLanguage: "",
+          harvestLogResults: [],
+          idToCropMap: new Map(),
+          idToAreaMap: new Map(),
+        };
+      },
+
+      computed: {
+        cropNames() {
+          return Array.from(this.idToCropMap.values());
+        },
+        areaNames() {
+          return Array.from(this.idToAreaMap.values());
+        },
+        harvestReportRows() {
+          let rows = [];
+          for (let log of this.harvestLogResults) {
+            rows.push({
+              date: log.timestamp
+                ? new Date(log.timestamp * 1000).toISOString().split("T")[0]
+                : "",
+              area: this.idToAreaMap.get(log.area?.[0]?.id) || "Unknown",
+              crop: this.idToCropMap.get(log.plant?.[0]?.id) || "Unknown",
+              yield: log.quantity?.[0]?.value || 0,
+              units: log.quantity?.[0]?.unit || "",
+            });
+          }
+          return rows;
+        },
+      },
+
+      methods: {
+        generateReport() {
+          axios.get("/farm.json")
+            .then((res) => {
+              this.reportFarm = res.data.name;
+              this.reportUser = res.data.user.name;
+              this.reportLanguage = res.data.user.language;
+
+              let startTS = 1588651200;
+              let endTS = 1589515200;
+
+              console.log("Start:", startTS, "End:", endTS);
+
+              const url = `/log.json?type=farm_harvest&timestamp[ge]=${startTS}&timestamp[le]=${endTS}`;
+
+              console.log("Requesting:", url);
+
+              axios.get(url)
+                .then((res) => {
+                  this.harvestLogResults = res.data.list;
+                  console.log("Logs retrieved:", this.harvestLogResults);
+                })
+                .catch((err) => {
+                  console.error("Error fetching harvest logs:", err);
+                });
+            })
+            .catch((err) => {
+              console.error("Error fetching farm info:", err);
+            });
+        },
+
+        deleteRow(index) {
+          this.harvestLogResults.splice(index, 1);
+        },
+      },
+    }).mount("#harvest-report");
+  </script>
+</body>
+</html>
