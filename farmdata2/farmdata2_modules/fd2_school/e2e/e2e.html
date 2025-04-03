@@ -9,10 +9,10 @@
     <br /><br />
 
     <label>Start: </label>
-    <input type="date" v-model="reportStartDate" :max="reportEndDate" />
+    <input data-cy="start-date" type="date" v-model="reportStartDate" :max="reportEndDate" />
 
     <label>End: </label>
-    <input type="date" v-model="reportEndDate" :min="reportStartDate" />
+    <input data-cy="end-date" type="date" v-model="reportEndDate" :min="reportStartDate" />
     <br /><br />
 
     <label>Crop: </label>
@@ -91,8 +91,8 @@
       data() {
         return {
           reportTitle: "",
-          reportStartDate: "",
-          reportEndDate: "",
+          reportStartDate: "2020-05-05",
+          reportEndDate: "2020-05-15",
           reportCrop: "",
           reportArea: "",
           reportFarm: "",
