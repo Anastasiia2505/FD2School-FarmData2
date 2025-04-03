@@ -16,7 +16,7 @@
     <br /><br />
 
     <label>Crop: </label>
-    <select v-model="reportCrop">
+    <select data-cy="crop-dropdown" v-model="reportCrop">
       <option value="">Select a crop</option>
       <option v-for="crop in cropNames" :key="crop" :value="crop">{{ crop }}</option>
     </select>
@@ -29,10 +29,10 @@
 
     <br /><br />
 
-    <button @click="generateReport">Generate Report</button>
+    <button data-cy="generate-report-button" @click="generateReport">Generate Report</button>
     <br /><br />
 
-    <div v-if="reportFarm && reportUser && reportLanguage">
+    <div data-cy="report-header" v-if="reportFarm && reportUser && reportLanguage">
       <p><strong>Farm:</strong> {{ reportFarm }}</p>
       <p><strong>User:</strong> {{ reportUser }}</p>
       <p><strong>Language:</strong> {{ reportLanguage }}</p>
@@ -124,8 +124,9 @@
             let units = harvestQty?.unit?.name || "";
 
             // Crop
-            let cropTid = parseInt(log.data?.crop_tid);
-            let crop = this.idToCropMap.get(cropTid) || "Unknown";
+            //let cropTid = parseInt(log.data?.crop_tid);
+            //let crop = this.idToCropMap.get(cropTid)|| "Unknown";
+            let crop = log.crop?.[0]?.name || "Unknown";
 
             // Filter by selected crop (if any)
             if (this.reportCrop && crop !== this.reportCrop) {
@@ -163,6 +164,10 @@
             axios.get(url).then((res) => {
               this.harvestLogResults = res.data.list;
             }); 
+
+            
+
+
           });
         },
 
